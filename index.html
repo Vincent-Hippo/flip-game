@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>開心翻翻樂 - 長者記憶遊戲</title>
+
+<!-- Android 安裝成 App（PWA） -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f6f4f">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  /* ==================== 基本設定 ==================== */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg: #fdf6e9;           /* 溫暖米色背景 */
+    --card-back: #2f6f4f;    /* 卡背深綠 */
+    --card-face: #ffffff;
+    --accent: #b3541e;       /* 暖橘強調色 */
+    --text: #2b2b2b;
+    --good: #2f8f4e;
+  }
+
+  body {
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* 預設大字體，方便長者閱讀 */
+    font-size: 22px;
+    /* 手機上避免雙擊誤觸縮放 */
+    touch-action: manipulation;
+  }
+
+  /* ==================== 標題 ==================== */
+  header {
+    text-align: center;
+    padding: 20px 16px 8px;
+  }
+
+  header h1 {
+    font-size: 2.6rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+  }
+
+  header p {
+    margin-top: 4px;
+    font-size: 1.2rem;
+    color: #6b6b6b;
+  }
+
+  /* ==================== 設定區 ==================== */
+  .setup {
+    background: #fff;
+    border: 3px solid #e8d9b8;
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin: 16px;
+    max-width: 640px;
+    width: calc(100% - 32px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  }
+
+  .setup h2 {
+    font-size: 1.5rem;
+    margin-bottom: 14px;
+    color: var(--card-back);
+  }
+
+  .choice-group {
+    margin-bottom: 22px;
+  }
+
+  .choice-group label.title {
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .choices {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .choice-btn {
+    font-size: 1.3rem;
+    font-family: inherit;
+    padding: 14px 26px;
+    border-radius: 14px;
+    border: 3px solid #cfcfcf;
+    background: #f4f4f4;
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+    min-width: 110px;
+  }
+
+  .choice-btn:hover { background: #e9f3ec; }
+
+  .choice-btn.selected {
+    background: var(--card-back);
+    border-color: var(--card-back);
+    color: #fff;
+    font-weight: bold;
+  }
+
+  .start-btn {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    font-size: 1.8rem;
+    font-family: inherit;
+    font-weight: bold;
+    padding: 20px;
+    border-radius: 18px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 6px;
+  }
+
+  .start-btn:hover { filter: brightness(1.1); }
+
+  .howto {
+    margin-top: 18px;
+    font-size: 1.05rem;
+    color: #555;
+    line-height: 1.8;
+    background: #fffaf0;
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+
+  .howto b { color: var(--accent); }
+
+  /* ==================== 遊戲區 ==================== */
+  .game {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex: 1;
+    padding: 10px 16px 24px;
+  }
+
+  .game.active { display: flex; }
+
+  .hud {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin: 8px 0 18px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .hud .info {
+    background: #fff;
+    border: 2px solid #e8d9b8;
+    border-radius: 14px;
+    padding: 10px 20px;
+    font-size: 1.25rem;
+  }
+
+  .hud .info b { color: var(--accent); font-size: 1.4rem; }
+
+  .hud-btns { display: flex; gap: 10px; }
+
+  .small-btn {
+    font-size: 1.15rem;
+    font-family: inherit;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 2px solid var(--card-back);
+    background: #fff;
+    color: var(--card-back);
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .small-btn:active { background: #e9f3ec; }
+
+  /* ==================== 卡牌 ====================
+     卡片寬度由 JS 依螢幕大小計算，寫入 --card-w，
+     讓棋盤剛好填滿視窗，不需要捲動 */
+  .board {
+    display: grid;
+    gap: 14px;
+    --card-w: 120px;
+    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+    margin-top: auto;
+  }
+
+  .card {
+    perspective: 800px;
+    cursor: pointer;
+    width: var(--card-w);
+    aspect-ratio: 3 / 4;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .45s ease;
+  }
+
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+
+  .card-back-face {
+    background: linear-gradient(145deg, #3b8563, #2f6f4f);
+    border: 4px solid #245440;
+  }
+
+  .card-back-face .qmark {
+    font-size: calc(var(--card-w) * 0.52);
+    color: #ffffffaa;
+    font-weight: bold;
+  }
+
+  .card-front-face {
+    background: var(--card-face);
+    border: 4px solid #e0d5b8;
+    transform: rotateY(180deg);
+    padding: 6px;
+  }
+
+  .card-front-face .emoji {
+    font-size: calc(var(--card-w) * 0.44);
+    line-height: 1.1;
+  }
+
+  .card-front-face .name {
+    font-size: calc(var(--card-w) * 0.17);
+    font-weight: bold;
+    color: #444;
+  }
+
+  .card.matched .card-front-face {
+    background: #eaf7ec;
+    border-color: var(--good);
+  }
+
+  .card.matched {
+    cursor: default;
+    animation: pop .5s ease;
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  .card.wrong .card-front-face {
+    border-color: #d9534f;
+    background: #fdeaea;
+  }
+
+  /* ==================== 錄音清單（台語語音） ==================== */
+  .rec-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 4px 6px;
+  }
+  .rec-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #faf7f0;
+    border: 2px solid #eee5d5;
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 1.15rem;
+  }
+  .rec-row .w-emoji { font-size: 1.6rem; }
+  .rec-row .w-name { flex: 1; font-weight: bold; }
+  .rec-mini {
+    font-size: 1.05rem;
+    font-family: inherit;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 2px solid #cfcfcf;
+    background: #fff;
+    cursor: pointer;
+  }
+  .rec-mini.recording {
+    background: #d9534f;
+    border-color: #d9534f;
+    color: #fff;
+    font-weight: bold;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 50% { opacity: .7; } }
+  .rec-row.done .w-name::after { content: "　✓已錄"; color: var(--good); }
+  .rec-hint {
+    margin-top: 8px;
+    font-size: 1.02rem;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  /* ==================== 完成畫面 ==================== */
+  .done-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 30, 30, 0.6);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .done-overlay.show { display: flex; }
+
+  .done-box {
+    background: #fff;
+    border-radius: 22px;
+    padding: 34px 40px;
+    text-align: center;
+    max-width: 480px;
+    width: calc(100% - 40px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .done-box .big-emoji { font-size: 4rem; }
+
+  .done-box h2 {
+    font-size: 2rem;
+    color: var(--accent);
+    margin: 10px 0 6px;
+  }
+
+  .done-box .praise {
+    font-size: 1.4rem;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  .done-box .stats {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 22px;
+    line-height: 1.8;
+  }
+
+  .done-btns { display: flex; flex-direction: column; gap: 12px; }
+
+  .done-btns button {
+    font-size: 1.4rem;
+    font-family: inherit;
+    font-weight: bold;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .again-btn { background: var(--accent); color: #fff; }
+  .change-btn { background: #eee; color: #444; }
+
+  /* ==================== 提示訊息 ==================== */
+  .toast {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--good);
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: bold;
+    padding: 14px 30px;
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, top .3s;
+    z-index: 60;
+  }
+
+  .toast.show { opacity: 1; top: 28px; }
+
+  @media (max-width: 480px) {
+    body { font-size: 19px; }
+    .board { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🃏 開心翻翻樂</h1>
+  <p>翻牌配對 · 動動腦 · 越玩越靈光</p>
+</header>
+
+<!-- ==================== 開始設定畫面 ==================== -->
+<section class="setup" id="setup">
+  <h2>開始前，先選擇玩法</h2>
+
+  <div class="choice-group">
+    <label class="title">1️⃣ 難度（翻幾張牌）</label>
+    <div class="choices" id="difficulty">
+      <button class="choice-btn selected" data-val="4">簡單<br>4 對 8 張</button>
+      <button class="choice-btn" data-val="6">中等<br>6 對 12 張</button>
+      <button class="choice-btn" data-val="8">困難<br>8 對 16 張</button>
+    </div>
+  </div>
+
+  <div class="choice-group">
+    <label class="title">2️⃣ 圖案主題</label>
+    <div class="choices" id="theme">
+      <button class="choice-btn selected" data-val="animal">🐻 動物</button>
+      <button class="choice-btn" data-val="fruit">🍎 水果</button>
+      <button class="choice-btn" data-val="daily">☕ 生活物品</button>
+    </div>
+  </div>
+
+  <div class="choice-group">
+    <label class="title">3️⃣ 念牌語音（翻牌時念出名稱）</label>
+    <div class="choices" id="voiceChoice">
+      <button class="choice-btn" data-val="off">🔇 關閉</button>
+      <button class="choice-btn selected" data-val="mandarin">🗣️ 國語</button>
+      <button class="choice-btn" data-val="taiwanese">🎙️ 台語</button>
+    </div>
+  </div>
+
+  <div class="choice-group" id="recorderGroup" style="display:none">
+    <label class="title">🎙️ 幫牌名錄台語音（請家人幫忙錄，選用）</label>
+    <div class="rec-list" id="recorderList"></div>
+    <p class="rec-hint">目前選項已內建台語發音，直接玩就可以聽！想要<span style="color:var(--accent);font-weight:bold">用家人的聲音</span>也可以：點「重錄」後請家人對麥克風用台語念牌名，再點「停止」。錄音存在這台電腦，下次開啟不用再錄。</p>
+  </div>
+
+  <button class="start-btn" id="startBtn">▶ 開 始 遊 戲</button>
+
+  <div class="howto">
+    <b>📖 玩法說明：</b><br>
+    ① 每次翻 <b>兩張</b> 牌。<br>
+    ② 兩張 <b>一樣</b> 就配對成功，牌會留下來。<br>
+    ③ 不一樣會翻回去，<b>記住位置</b>，下次再試。<br>
+    ④ 把 <b>全部配對</b> 就過關！沒有時間限制，慢慢來。😊<br>
+    ⑤ 翻開牌時會<b>念出名字</b>，可以在上方選 🔇 / 國語 / 台語。
+  </div>
+</section>
+
+<!-- ==================== 遊戲畫面 ==================== -->
+<section class="game" id="game">
+  <div class="hud">
+    <div class="info">配對成功：<b id="matched">0</b> / <b id="total">0</b> 對</div>
+    <div class="info">翻牌次數：<b id="moves">0</b> 次</div>
+    <div class="hud-btns">
+      <button class="small-btn" id="voiceBtn">🗣️ 念名：國語</button>
+      <button class="small-btn" id="peekBtn">👁 看一眼（提示）</button>
+      <button class="small-btn" id="restartBtn">🔄 重新開始</button>
+      <button class="small-btn" id="backBtn">🏠 回首頁</button>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+</section>
+
+<!-- ==================== 過關畫面 ==================== -->
+<div class="done-overlay" id="doneOverlay">
+  <div class="done-box">
+    <div class="big-emoji">🎉🏆🎉</div>
+    <h2>恭喜過關！</h2>
+    <p class="praise" id="praiseText">您真厲害！記憶力一級棒！</p>
+    <p class="stats" id="statsText"></p>
+    <div class="done-btns">
+      <button class="again-btn" id="againBtn">🔁 再玩一次</button>
+      <button class="change-btn" id="changeBtn">⚙️ 換個玩法</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== 主題資料（emoji + 名稱，幫助記憶） ==================== */
+const THEMES = {
+  animal: [
+    { e: "🐻", n: "熊" }, { e: "🐱", n: "貓" }, { e: "🐶", n: "狗" },
+    { e: "🐰", n: "兔" }, { e: "🐔", n: "雞" }, { e: "🐭", n: "鼠" },
+    { e: "🐴", n: "馬" }, { e: "🐷", n: "豬" }, { e: "🐢", n: "龜" },
+    { e: "🦋", n: "蝴蝶" }, { e: "🐟", n: "魚" }, { e: "🐘", n: "象" }
+  ],
+  fruit: [
+    { e: "🍎", n: "蘋果" }, { e: "🍌", n: "香蕉" }, { e: "🍉", n: "西瓜" },
+    { e: "🍊", n: "橘子" }, { e: "🍇", n: "葡萄" }, { e: "🍓", n: "草莓" },
+    { e: "🍍", n: "鳳梨" }, { e: "🍑", n: "桃子" }, { e: "🥭", n: "芒果" },
+    { e: "🥝", n: "奇異果" }, { e: "🍒", n: "櫻桃" }, { e: "🥑", n: "酪梨" }
+  ],
+  daily: [
+    { e: "☕", n: "咖啡" }, { e: "👓", n: "眼鏡" }, { e: "🕰️", n: "時鐘" },
+    { e: "🔑", n: "鑰匙" }, { e: "📱", n: "手機" }, { e: "☂️", n: "雨傘" },
+    { e: "🍵", n: "茶" }, { e: "🪑", n: "椅子" }, { e: "🧻", n: "面紙" },
+    { e: "💊", n: "藥" }, { e: "📚", n: "書" }, { e: "🪓", n: "斧頭" }
+  ]
+};
+
+/* 台語內建音檔：三個主題資料夾（檔名=牌名.mp3） */
+const TAI_AUDIO_FOLDER = { animal: "動物", fruit: "水果", daily: "生活物品" };
+
+const PRAISES = [
+  "您真厲害！記憶力一級棒！",
+  "哇！這麼快就找到了，太棒了！",
+  "做得好！頭腦越來越靈光！",
+  "真不簡單！給您拍拍手！👏",
+  "寶刀未老！繼續保持！"
+];
+
+/* ==================== 狀態 ==================== */
+let pairs = 4;            // 幾對
+let themeKey = "animal";
+let voiceMode = localStorage.getItem("flipVoiceMode") || "mandarin"; // off | mandarin | taiwanese
+let flipped = [];         // 目前翻開的牌 index
+let matchedCount = 0;
+let moves = 0;
+let lockBoard = false;
+let cardData = [];        //每張卡內容
+let boardEl, boardCols = 4, usedPeekOnce = 0;
+
+const $ = id => document.getElementById(id);
+
+/* ==================== 設定按鈕 ==================== */
+function bindChoices(containerId, callback) {
+  const box = $(containerId);
+  box.querySelectorAll(".choice-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      box.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      callback(btn.dataset.val);
+    });
+  });
+}
+bindChoices("difficulty", v => pairs = parseInt(v, 10));
+bindChoices("theme", v => {
+  themeKey = v;
+  buildRecorderList();          // 依主題更新錄音清單
+});
+bindChoices("voiceChoice", v => setVoiceMode(v));
+
+/* ==================== 念牌語音 ====================
+   國語：系統語音合成（zh-TW，可離線）
+   台語：請家人用麥克風錄音（目前戲沒有台語電腦語音，
+        用家人的聲音更親切），存在瀏覽器的 localStorage */
+const REC_KEY = (key) => "flipRec_" + themeKey + "_" + key;
+const VOICE_LABELS = { off: "🔇 念名：關", mandarin: "🗣️ 念名：國語", taiwanese: "🎙️ 念名：台語" };
+
+function setVoiceMode(mode) {
+  voiceMode = mode;
+  localStorage.setItem("flipVoiceMode", mode);
+  try { speechSynthesis.cancel(); } catch (e) {}
+  stopCurrentAudio();
+  // 同步首頁選項的選取狀態
+  document.querySelectorAll("#voiceChoice .choice-btn").forEach(b =>
+    b.classList.toggle("selected", b.dataset.val === mode));
+  // 顯示/隱藏錄音區
+  $("recorderGroup").style.display = mode === "taiwanese" ? "block" : "none";
+  if (mode === "taiwanese") buildRecorderList();
+  updateHudVoiceBtn();
+  if (mode === "taiwanese") showToast(" 翻牌時會念台語！也可以在首頁錄家人聲音取代");
+}
+
+function updateHudVoiceBtn() {
+  $("voiceBtn").textContent = VOICE_LABELS[voiceMode] || VOICE_LABELS.mandarin;
+}
+
+/* 遊戲中點按鈕循環：關閉 → 國語 → 台語 */
+$("voiceBtn").addEventListener("click", () => {
+  const order = ["off", "mandarin", "taiwanese"];
+  setVoiceMode(order[(order.indexOf(voiceMode) + 1) % order.length]);
+});
+
+/* ---------- 國語：語音合成 ---------- */
+function speakMandarin(text) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    // 找台灣腔語音
+    const vs = speechSynthesis.getVoices();
+    const tw = vs.find(v => /^zh[-_]TW/i.test(v.lang) && /hanhan|yating/i.test(v.name)) ||
+               vs.find(v => /^zh[-_]TW/i.test(v.lang)) ||
+               vs.find(v => /^zh/i.test(v.lang));
+    if (tw) u.voice = tw;
+    u.lang = (tw && tw.lang) || "zh-TW";
+    u.rate = 0.75;      // 放慢速度，比較好聽懂
+    u.pitch = 1;
+    u.volume = 1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+/* ---------- 台語：內建音檔 → 家人錄音 → 國語，依序退回 ---------- */
+let currentAudio = null;   // 目前播放中的錄音
+function stopCurrentAudio() {
+  if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
+}
+
+/* 內建台語音檔：檔名 = 牌名.mp3，放在各主題資料夾（動物／水果／生活物品） */
+function playBuiltinTai(soundKey) {
+  return new Promise(resolve => {
+    stopCurrentAudio();
+    const folder = TAI_AUDIO_FOLDER[themeKey];
+    if (!folder) { resolve(false); return; }
+    try {
+      const src = encodeURIComponent(folder) + "/" + encodeURIComponent(soundKey) + ".mp3";
+      const audio = new Audio(src);
+      currentAudio = audio;
+      audio.onended = () => resolve(true);
+      audio.onerror = () => { if (currentAudio === audio) currentAudio = null; resolve(false); };
+      audio.play().catch(() => resolve(false));
+    } catch (e) { resolve(false); }
+  });
+}
+
+/* 家人錄音（存於瀏覽器 localStorage，可覆蓋內建音檔） */
+function playRecording(soundKey) {
+  return new Promise(resolve => {
+    stopCurrentAudio();
+    const data = localStorage.getItem(REC_KEY(soundKey));
+    if (!data) { resolve(false); return; }
+    try {
+      const audio = new Audio(data);
+      currentAudio = audio;
+      audio.onended = () => resolve(true);
+      audio.onerror = () => resolve(false);
+      audio.play().catch(() => resolve(false));
+    } catch (e) { resolve(false); }
+  });
+}
+
+/* 依目前模式念出牌名（非同步，不打斷遊戲流程） */
+async function speakCardName(soundKey) {
+  if (voiceMode === "off") return;
+  if (voiceMode === "mandarin") { speakMandarin(soundKey); return; }
+  // 台語模式：優先播內建台語音檔
+  const ok = await playBuiltinTai(soundKey);
+  if (!ok) {
+    // 內建音檔讀不到 → 退回家人錄音
+    const rec = await playRecording(soundKey);
+    if (!rec) {
+      showToast(" 「" + soundKey + "」找不到台語音，先用國語念");
+      speakMandarin(soundKey);
+    }
+  }
+}
+
+/* ---------- 錄音功能 ---------- */
+let recordingSession = null;   // { rec, stream, itemKey }
+async function toggleRecord(recKey, btn) {
+  // 點到正在錄的「停止」→ 停下收尾
+  if (recordingSession && recordingSession.btn === btn) { recordingSession.rec.stop(); return; }
+  // 正在錄別張 → 先停掉那張
+  if (recordingSession) { clearTimeout(recordingSession.timer); recordingSession.rec.stop(); }
+  try {
+    if (!navigator.mediaDevices) { showToast(" 此瀏覽器不支援錄音"); return; }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
+    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      clearTimeout(timer);
+      stream.getTracks().forEach(t => t.stop());
+      btn.classList.remove("recording");
+      btn.textContent = localStorage.getItem(REC_KEY(recKey)) ? "重錄" : "錄音";
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+      if (blob.size < 200) { showToast(" 好像沒錄到聲音，再試一次"); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { localStorage.setItem(REC_KEY(recKey), reader.result); }
+        catch (e) { showToast(" 存檔失敗（空間不足）"); return; }
+        btn.textContent = "重錄";
+        btn.closest(".rec-row").classList.add("done");
+        showToast(" 「" + recKey + "」錄好了！");
+      };
+      reader.readAsDataURL(blob);
+    };
+    rec.start();
+    btn.classList.add("recording");
+    btn.textContent = "停止";
+    const timer = setTimeout(() => rec.stop(), 6000); // 最長 6 秒
+    recordingSession = { rec, btn, timer };
+  } catch (e) {
+    showToast(" 無法開啟麥克風（需要允許權限）");
+  }
+}
+
+/* 依照目前主題建立錄音清單 */
+function buildRecorderList() {
+  const list = $("recorderList");
+  if (!list) return;
+  list.innerHTML = "";
+  THEMES[themeKey].forEach(item => {
+    const row = document.createElement("div");
+    row.className = "rec-row" + (localStorage.getItem(REC_KEY(item.n)) ? " done" : "");
+    row.innerHTML = `
+      <span class="w-emoji">${item.e}</span>
+      <span class="w-name">${item.n}</span>`;
+    const recBtn = document.createElement("button");
+    recBtn.className = "rec-mini";
+    recBtn.textContent = localStorage.getItem(REC_KEY(item.n)) ? "重錄" : "錄音";
+    recBtn.addEventListener("click", () => toggleRecord(item.n, recBtn));
+    const playBtn = document.createElement("button");
+    playBtn.className = "rec-mini";
+    playBtn.textContent = "▶ 試聽";
+    playBtn.disabled = !localStorage.getItem(REC_KEY(item.n));
+    playBtn.addEventListener("click", async () => {
+      const ok = await playRecording(item.n);
+      if (!ok) showToast(" 還沒錄音喔");
+    });
+    const delBtn = document.createElement("button");
+    delBtn.className = "rec-mini";
+    delBtn.textContent = "✕";
+    delBtn.disabled = !localStorage.getItem(REC_KEY(item.n));
+    delBtn.addEventListener("click", () => {
+      localStorage.removeItem(REC_KEY(item.n));
+      buildRecorderList();
+    });
+    row.appendChild(playBtn);
+    row.appendChild(recBtn);
+    row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+}
+
+/* ==================== 開始 / 重開 ==================== */
+$("startBtn").addEventListener("click", showPeekIntro);   // 先預覽再開始
+$("restartBtn").addEventListener("click", showPeekIntro);
+$("againBtn").addEventListener("click", () => {
+  $("doneOverlay").classList.remove("show");
+  showPeekIntro();
+});
+$("changeBtn").addEventListener("click", () => {
+  $("doneOverlay").classList.remove("show");
+  $("game").classList.remove("active");
+  $("setup").style.display = "block";
+});
+$("backBtn").addEventListener("click", () => {
+  $("doneOverlay").classList.remove("show");
+  try { speechSynthesis.cancel(); } catch (e) {}
+  stopCurrentAudio();
+  $("game").classList.remove("active");
+  $("setup").style.display = "block";
+});
+
+/* 開始時先讓玩家「看一眼」所有牌，降低挫折感 */
+function showPeekIntro() {
+  buildBoard();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  stopCurrentAudio();
+  $("setup").style.display = "none";
+  $("game").classList.add("active");
+  layoutBoard();                    // 依目前螢幕大小排卡
+  showToast("🧠 請先記住所有的牌…");
+  // 全部翻開 5 秒
+  document.querySelectorAll(".card").forEach(c => c.classList.add("flipped"));
+  lockBoard = true;
+  setTimeout(() => {
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("flipped"));
+    lockBoard = false;
+    showToast("眼明手快，開始翻牌吧！");
+  }, 5000);
+}
+
+/* ==================== 建立棋盤 ==================== */
+function buildBoard() {
+  const pool = [...THEMES[themeKey]];
+  // 隨機挑選 pairs 個
+  shuffle(pool);
+  const picked = pool.slice(0, pairs);
+  // 每個做兩份
+  cardData = [...picked, ...picked].map(item => ({ ...item }));
+  shuffle(cardData);
+
+  matchedCount = 0;
+  moves = 0;
+  flipped = [];
+  lockBoard = false;
+  usedPeekOnce = 0;
+
+  $("matched").textContent = "0";
+  $("total").textContent = pairs;
+  $("moves").textContent = "0";
+
+  boardEl = $("board");
+  boardEl.innerHTML = "";
+
+  // 欄數：固定 4 欄（8/12/16 張皆可整除），寬度由 layoutBoard 依螢幕計算
+  boardCols = 4;
+  boardEl.style.gridTemplateColumns = `repeat(${boardCols}, minmax(0, 1fr))`;
+
+  cardData.forEach((item, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.index = i;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", "第" + (i + 1) + "張牌");
+    card.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back-face"><span class="qmark">?</span></div>
+        <div class="card-face card-front-face">
+          <span class="emoji">${item.e}</span>
+          <span class="name">${item.n}</span>
+        </div>
+      </div>`;
+    card.addEventListener("click", () => onFlip(card, i));
+    boardEl.appendChild(card);
+  });
+}
+
+/* ==================== 依螢幕大小自動排版 ====================
+   計算卡片寬度 --card-w：
+   ① 受「可用寬度 ÷ 欄數」限制
+   ② 也受「可用高度 ÷ 列數」限制（卡片高 = 寬 × 4/3）
+   讓棋盤剛好裝進一個畫面，大螢幕變大、小螢幕變小，都不用捲動 */
+function layoutBoard() {
+  if (!boardEl || !cardData.length) return;
+  const total = cardData.length;
+  const rows = total / boardCols;
+  const gap = window.innerWidth <= 480 ? 8 : 14;
+  boardEl.style.gap = gap + "px";
+
+  const availW = Math.min(window.innerWidth - 32, 900);          // 留點邊距
+  const boardTop = boardEl.getBoundingClientRect().top;
+  const availH = Math.max(window.innerHeight - boardTop - 20, 200);
+
+  let w = Math.min(
+    (availW - gap * (boardCols - 1)) / boardCols,
+    ((availH - gap * (rows - 1)) / rows) * (3 / 4)
+  );
+  w = Math.max(60, Math.min(w, 200));   // 最小 60px 可按、最大 200px 不誇張
+
+  boardEl.style.maxWidth = Math.ceil(w * boardCols + gap * (boardCols - 1)) + "px";
+  boardEl.style.setProperty("--card-w", Math.floor(w) + "px");
+}
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(layoutBoard, 120);
+});
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+/* ==================== 翻牌邏輯 ==================== */
+function onFlip(card, index) {
+  if (lockBoard) return;
+  if (card.classList.contains("flipped")) return;   // 已翻開
+  if (card.classList.contains("matched")) return;   // 已配對
+
+  card.classList.add("flipped");
+  flipped.push({ card, index });
+  speakCardName(cardData[index].n);   // 翻開並念出名字
+
+  if (flipped.length === 2) {
+    moves++;
+    $("moves").textContent = moves;
+    lockBoard = true;
+    const [a, b] = flipped;
+
+    if (cardData[a.index].e === cardData[b.index].e) {
+      // ✅ 配對成功
+      setTimeout(() => {
+        a.card.classList.add("matched");
+        b.card.classList.add("matched");
+        matchedCount++;
+        $("matched").textContent = matchedCount;
+        flipped = [];
+        lockBoard = false;
+        playSound("good");
+        if (matchedCount === pairs) setTimeout(showDone, 600);
+      }, 400);
+    } else {
+      // ❌ 配對失敗 → 提示訊息 + 翻回
+      showToast(" 再想一想，記住它們的位置 ");
+      a.card.classList.add("wrong");
+      b.card.classList.add("wrong");
+      playSound("bad");
+      setTimeout(() => {
+        a.card.classList.remove("flipped", "wrong");
+        b.card.classList.remove("flipped", "wrong");
+        flipped = [];
+        lockBoard = false;
+      }, 1100);   // 停留 1.1 秒，足夠看清
+    }
+  } else if (flipped.length === 1) {
+    playSound("flip");
+  }
+}
+
+/* ==================== 提示功能：「看一眼」 ==================== */
+$("peekBtn").addEventListener("click", () => {
+  if (lockBoard) return;
+  if (usedPeekOnce >= 3) {
+    showToast("每關最多只能看 3 次喔！");
+    return;
+  }
+  usedPeekOnce++;
+  lockBoard = true;
+  showToast("👁 每關可用 3 次，目前第 " + usedPeekOnce + " 次");
+  document.querySelectorAll(".card:not(.matched)").forEach(c => c.classList.add("flipped"));
+  setTimeout(() => {
+    document.querySelectorAll(".card:not(.matched)").forEach(c => c.classList.remove("flipped"));
+    lockBoard = false;
+  }, 1500);
+});
+
+/* ==================== 過關 ==================== */
+function showDone() {
+  $("praiseText").textContent = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+  $("statsText").innerHTML =
+    ` 共翻牌 <b>${moves}</b> 次<br>` +
+    ` 本關使用提示 <b>${usedPeekOnce}</b> 次<br>` +
+    ` 難度：<b>${pairs}</b> 對牌`;
+  $("doneOverlay").classList.add("show");
+  playSound("win");
+}
+
+/* ==================== 音效（Web Audio，不用外部檔案） ==================== */
+let audioCtx = null;
+function playSound(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+    const notes = {
+      flip: [[523, 0, .12]],               // 翻牌：叮
+      good: [[523, 0, .15], [784, .12, .25]],   // 成功：叮-叮↑
+      bad:  [[330, 0, .2], [262, .18, .3]],     // 失敗：低音
+      win:  [[523, 0, .18], [659, .16, .18], [784, .32, .18], [1047, .48, .4]]  // 過關：旋律
+    }[type] || [];
+    notes.forEach(([freq, start, dur]) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + dur);
+    });
+  } catch (e) { /* 音效不影響遊戲 */ }
+}
+
+/* ==================== 提示訊息 ==================== */
+let toastTimer = null;
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+/* ==================== 語音初始化 ==================== */
+(function initVoice() {
+  // 預先觸發語音清單載入（有些瀏覽器需要）
+  try {
+    speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  } catch (e) {}
+  if (!["off", "mandarin", "taiwanese"].includes(voiceMode)) voiceMode = "mandarin";
+  document.querySelectorAll("#voiceChoice .choice-btn").forEach(b =>
+    b.classList.toggle("selected", b.dataset.val === voiceMode));
+  $("recorderGroup").style.display = voiceMode === "taiwanese" ? "block" : "none";
+  updateHudVoiceBtn();
+  buildRecorderList();
+})();
+
+/* App（PWA）離線快取：需由 http/https 開啟才有效，file:// 開啟時自動略過 */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+/* 偵測已安裝 App（standalone）：把說明區的提示調整為 App 使用者 */
+let prefersStandalone = false;
+try { prefersStandalone = window.matchMedia("(display-mode: standalone)").matches; } catch (e) {}
+</script>
+</body>
+</html>

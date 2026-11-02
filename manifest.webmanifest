@@ -1,0 +1,26 @@
+{
+  "name": "開心翻翻樂 - 長者記憶遊戲",
+  "short_name": "翻翻樂",
+  "description": "專為長者設計的翻牌配對記憶遊戲，附國語／台語念牌語音",
+  "lang": "zh-Hant",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#2f6f4f",
+  "background_color": "#fdf6e9",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
