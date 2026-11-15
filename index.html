@@ -269,6 +269,22 @@
     color: #444;
   }
 
+  /* 沒有 emoji 圖案的牌（如芭樂、甘蔗）→ 大字卡片 */
+  .card-front-face .bigname {
+    font-size: calc(var(--card-w) * 0.27);
+    font-weight: bold;
+    color: var(--accent);
+    background: #fdf0e0;
+    border: 3px solid #f0d8b8;
+    border-radius: 50%;
+    width: calc(var(--card-w) * 0.78);
+    height: calc(var(--card-w) * 0.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+  }
+
   .card.matched .card-front-face {
     background: #eaf7ec;
     border-color: var(--good);
@@ -448,6 +464,12 @@
       <button class="choice-btn selected" data-val="animal">🐻 動物</button>
       <button class="choice-btn" data-val="fruit">🍎 水果</button>
       <button class="choice-btn" data-val="daily">☕ 生活物品</button>
+      <button class="choice-btn" data-val="plants">🌳 花草樹木</button>
+      <button class="choice-btn" data-val="vehicle">🚂 交通工具</button>
+      <button class="choice-btn" data-val="sea">🐳 海洋生物</button>
+      <button class="choice-btn" data-val="festival">🏮 節慶民俗</button>
+      <button class="choice-btn" data-val="weather">☀️ 天氣</button>
+      <button class="choice-btn" data-val="food">🍜 台灣美食</button>
     </div>
   </div>
 
@@ -523,18 +545,52 @@ const THEMES = {
     { e: "🍎", n: "蘋果" }, { e: "🍌", n: "香蕉" }, { e: "🍉", n: "西瓜" },
     { e: "🍊", n: "橘子" }, { e: "🍇", n: "葡萄" }, { e: "🍓", n: "草莓" },
     { e: "🍍", n: "鳳梨" }, { e: "🍑", n: "桃子" }, { e: "🥭", n: "芒果" },
-    { e: "🥝", n: "奇異果" }, { e: "🍒", n: "櫻桃" }, { e: "🥑", n: "酪梨" }
+    { e: null, n: "芭樂" }, { e: "🍒", n: "櫻桃" }, { e: null, n: "甘蔗" }
   ],
-  daily: [
-    { e: "☕", n: "咖啡" }, { e: "👓", n: "眼鏡" }, { e: "🕰️", n: "時鐘" },
-    { e: "🔑", n: "鑰匙" }, { e: "📱", n: "手機" }, { e: "☂️", n: "雨傘" },
-    { e: "🍵", n: "茶" }, { e: "🪑", n: "椅子" }, { e: "🧻", n: "面紙" },
-    { e: "💊", n: "藥" }, { e: "📚", n: "書" }, { e: "🪓", n: "斧頭" }
+  plants: [
+    { e: "🌳", n: "樹" }, { e: "🌸", n: "花" }, { e: "🌻", n: "向日葵" },
+    { e: "🌼", n: "菊花" }, { e: "🌷", n: "鬱金香" }, { e: "🌵", n: "仙人掌" },
+    { e: "🍀", n: "幸運草" }, { e: "🍁", n: "楓葉" }, { e: "🌾", n: "稻穗" },
+    { e: "🌰", n: "栗子" }, { e: "🌿", n: "茶葉" }, { e: "🍂", n: "落葉" }
+  ],
+  vehicle: [
+    { e: "🚂", n: "火車" }, { e: "🚌", n: "公車" }, { e: "🚕", n: "計程車" },
+    { e: "🚗", n: "汽車" }, { e: "🚲", n: "腳踏車" }, { e: "🛵", n: "機車" },
+    { e: "✈️", n: "飛機" }, { e: "⛵", n: "帆船" }, { e: "🚑", n: "救護車" },
+    { e: "🚒", n: "消防車" }, { e: "🚓", n: "警車" }, { e: "🚚", n: "貨車" }
+  ],
+  sea: [
+    { e: "🐟", n: "魚" }, { e: "🦐", n: "蝦" }, { e: "🦀", n: "螃蟹" },
+    { e: "🐙", n: "章魚" }, { e: "🐬", n: "海豚" }, { e: "🐳", n: "鯨魚" },
+    { e: "🐢", n: "海龜" }, { e: "🦈", n: "鯊魚" }, { e: "🐚", n: "貝殼" },
+    { e: "🐡", n: "河豚" }, { e: "🦞", n: "龍蝦" }, { e: "🐊", n: "鱷魚" }
+  ],
+  festival: [
+    { e: "🏮", n: "燈籠" }, { e: "🧧", n: "紅包" }, { e: "🧨", n: "鞭炮" },
+    { e: "🥮", n: "月餅" }, { e: "🎆", n: "煙火" }, { e: "🪁", n: "風箏" },
+    { e: "🎊", n: "彩球" }, { e: "🎍", n: "竹子" }, { e: "🐉", n: "龍" },
+    { e: "🦁", n: "獅子" }, { e: "🎇", n: "仙女棒" }, { e: "🎈", n: "氣球" }
+  ],
+  weather: [
+    { e: "☀️", n: "太陽" }, { e: "🌙", n: "月亮" }, { e: "⭐", n: "星星" },
+    { e: "☁️", n: "雲" }, { e: "🌈", n: "彩虹" }, { e: "⚡", n: "閃電" },
+    { e: "❄️", n: "雪花" }, { e: "🌊", n: "海浪" }, { e: "🌧️", n: "下雨" },
+    { e: "⛅", n: "多雲" }, { e: "🌪️", n: "颱風" }, { e: "🌫️", n: "霧" }
+  ],
+  food: [
+    { e: "🍜", n: "湯麵" }, { e: "🍚", n: "白飯" }, { e: "🍲", n: "火鍋" },
+    { e: "🍳", n: "荷包蛋" }, { e: "🍞", n: "麵包" }, { e: "🍪", n: "餅乾" },
+    { e: "🍩", n: "甜甜圈" }, { e: "🍦", n: "冰淇淋" }, { e: "🍮", n: "布丁" },
+    { e: "🥟", n: "水餃" }, { e: "🍡", n: "麻糬" }, { e: "🥠", n: "籤餅" }
   ]
 };
 
-/* 台語內建音檔：三個主題資料夾（檔名=牌名.mp3） */
-const TAI_AUDIO_FOLDER = { animal: "動物", fruit: "水果", daily: "生活物品" };
+/* 台語內建音檔：主題資料夾（檔名=牌名.mp3；尚未提供的主題會自動退回家人錄音或國語） */
+const TAI_AUDIO_FOLDER = {
+  animal: "動物", fruit: "水果", daily: "生活物品",
+  plants: "花草", vehicle: "交通", sea: "海洋",
+  festival: "節慶", weather: "天氣", food: "美食"
+};
 
 const PRAISES = [
   "您真厲害！記憶力一級棒！",
@@ -833,13 +889,13 @@ function buildBoard() {
     card.dataset.index = i;
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", "第" + (i + 1) + "張牌");
+    const frontHtml = item.e
+      ? `<span class="emoji">${item.e}</span><span class="name">${item.n}</span>`
+      : `<span class="bigname">${item.n}</span>`;
     card.innerHTML = `
       <div class="card-inner">
         <div class="card-face card-back-face"><span class="qmark">?</span></div>
-        <div class="card-face card-front-face">
-          <span class="emoji">${item.e}</span>
-          <span class="name">${item.n}</span>
-        </div>
+        <div class="card-face card-front-face">${frontHtml}</div>
       </div>`;
     card.addEventListener("click", () => onFlip(card, i));
     boardEl.appendChild(card);
