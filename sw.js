@@ -1,7 +1,7 @@
 /* 開心翻翻樂 - Service Worker
    安裝後將遊戲、圖片與全部音檔快取，離線也能玩
    注意：逐一下載（缺檔自動略過），不會因為少一個檔案而整個安裝失敗 */
-const CACHE_NAME = "flipgame-v3";
+const CACHE_NAME = "flipgame-v4";
 
 const FILES = [
   "./index.html",
@@ -69,11 +69,29 @@ self.addEventListener("activate", event => {
   );
 });
 
-// 攔截請求：優先用快取（離線可玩），沒有才上網抓
+// 攔截請求：
+// ① 遊戲本體（index.html 等）→ 「網路優先」：永遠拿最新版，離線才用快取
+// ② 圖片與音檔 → 「快取優先」：快又不耗流量
 self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).then(response => response.clone()).catch(() => cached);
-    })
-  );
+  const url = new URL(event.request.url);
+  const path = decodeURIComponent(url.pathname);
+  const isAppShell =
+    path.endsWith("index.html") || path.endsWith("/") ||
+    path.endsWith("manifest.webmanifest") || path.endsWith("icon-192.png") || path.endsWith("icon-512.png");
+
+  if (isAppShell) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        return cached || fetch(event.request).then(response => response.clone()).catch(() => cached);
+      })
+    );
+  }
 });
